@@ -16,12 +16,16 @@ import android.util.AttributeSet
 import androidx.activity.ComponentActivity
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.FragmentTransaction
 import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import androidx.preference.PreferenceManager
 import emu.skyline.R
 import emu.skyline.SkylineApplication
+import emu.skyline.adapter.AvatarAdapter
+import emu.skyline.fragments.AvatarPickerFragment
 import emu.skyline.getPublicFilesDir
+import emu.skyline.settings.SettingsActivity
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -72,7 +76,25 @@ class ProfilePicturePreference @JvmOverloads constructor(context : Context, attr
         updatePreview()
     }
 
-    override fun onClick() = pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    //override fun onClick() = pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    override fun onClick() : Unit = run {
+        val avatarPath = "${context.getPublicFilesDir().canonicalPath}/avatar/chara/"
+        val pngFilter = { file : File -> file.extension == "png" }
+        val avatars = File(avatarPath).listFiles(pngFilter)?.sorted()
+        val newFragment = avatars?.let { AvatarPickerFragment(it.toList()) }
+
+        val transaction = (context as SettingsActivity).supportFragmentManager.beginTransaction()
+        // For a polished look, specify a transition animation.
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+        // To make it fullscreen, use the 'content' root view as the container
+        // for the fragment, which is always the root view for the activity.
+        if (avatars != null) {
+            transaction
+                .add(android.R.id.content, AvatarPickerFragment(avatars.toList()))
+                .addToBackStack(null)
+                .commit()
+        }
+    }
 
     private fun updatePreview() {
         var drawable: BitmapDrawable? = null

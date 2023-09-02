@@ -110,7 +110,7 @@ extern "C" JNIEXPORT jstring Java_emu_skyline_preference_FirmwareImportPreferenc
     return env->NewStringUTF("");
 }
 
-std::vector<skyline::u8> decodeBfttfFont(const std::shared_ptr<skyline::vfs::Backing> bfttfFile){
+std::vector<skyline::u8> decodeBfttfFont(const std::shared_ptr<skyline::vfs::Backing> bfttfFile) {
     constexpr skyline::u32 fontKey{0x06186249};
     constexpr skyline::u32 BFTTFMagic{0x18029a7f};
 
@@ -184,6 +184,105 @@ extern "C" JNIEXPORT void Java_emu_skyline_preference_FirmwareImportPreference_e
                 std::shared_ptr<skyline::vfs::Backing> ttfFile{fontsFileSystem->OpenFile(ttfFileName, {true, true, false})};
 
                 ttfFile->Write(decodedFont);
+            }
+        }
+    }
+}
+
+std::vector<skyline::u8> decompressYaz0(const std::shared_ptr<skyline::vfs::Backing> compressedYac0File) {
+    // magic must be "Yaz0" in ASCII
+    if (compressedYac0File->Read<skyline::u32>() != 0x307A6159)
+        return {};
+
+    // Size in bytes of the decompressed data
+    auto decompressedSize{skyline::util::SwapEndianness(compressedYac0File->Read<skyline::u32>(4))};
+
+    // Data starts at offset 0x10
+    std::vector<skyline::u8> compressedData(compressedYac0File->size - 16);
+    compressedYac0File->Read(compressedData, 16);
+
+    std::vector<skyline::u8> decompressedData(decompressedSize);
+
+    skyline::u32 srcPos{0};
+    skyline::u32 dstPos{0};
+
+    skyline::u8 groupHeader{0};
+    skyline::u32 groupHeaderLength{0};
+
+    while (srcPos < compressedData.size() && dstPos < decompressedSize) {
+        if (!groupHeaderLength) {
+            // Start a new data group and read the group header byte
+            groupHeader = compressedData[srcPos++];
+            groupHeaderLength = 8;
+        }
+
+        groupHeaderLength--;
+        if (groupHeader & 0x80) {
+            // A set bit (=1) in the group header means, that the chunk is exact 1 byte long. This byte must be copied to the output stream 1:1.
+            decompressedData[dstPos++] = compressedData[srcPos++];
+        } else {
+            // A cleared bit (=0) defines, that the chunk is 2 or 3 bytes long interpreted as a backreference to already decompressed data that must be copied.
+            const skyline::u8 byte1{compressedData[srcPos++]};
+            const skyline::u8 byte2{compressedData[srcPos++]};
+
+            skyline::u32 dist{static_cast<skyline::u32>(((byte1 & 0x0F) << 8) | byte2)};
+            skyline::u32 copySource{dstPos - (dist + 1)};
+            skyline::u32 numBytes{static_cast<skyline::u32>(byte1 >> 4)};
+            if (numBytes == 0)
+                numBytes = compressedData[srcPos++] + 0x12;
+            else
+                numBytes += 2;
+
+            // Copy data
+            for(int i = 0; i < numBytes; ++i) {
+                decompressedData[dstPos++] = decompressedData[copySource++];
+            }
+        }
+
+        groupHeader <<= 1;
+    }
+
+    return decompressedData;
+}
+
+extern "C" JNIEXPORT void Java_emu_skyline_preference_FirmwareImportPreference_extractAvatarImage(JNIEnv *env, jobject thiz, jstring systemArchivesPathJstring, jstring keysPathJstring, jstring avatarPath) {
+    constexpr skyline::u64 avatarImageProgramId{0x010000000000080A};
+
+    auto avatarFileSystem{std::make_shared<skyline::vfs::OsFileSystem>(skyline::JniString(env, avatarPath))};
+    auto systemArchivesFileSystem{std::make_shared<skyline::vfs::OsFileSystem>(skyline::JniString(env, systemArchivesPathJstring))};
+    auto systemArchives{systemArchivesFileSystem->OpenDirectory("")};
+    auto keyStore{std::make_shared<skyline::crypto::KeyStore>(skyline::JniString(env, keysPathJstring))};
+
+    for (const auto &entry : systemArchives->Read()) {
+        std::shared_ptr<skyline::vfs::Backing> backing{systemArchivesFileSystem->OpenFile(entry.name)};
+        auto nca{skyline::vfs::NCA(backing, keyStore)};
+
+        if (nca.header.programId == avatarImageProgramId && nca.romFs != nullptr) {
+            auto controlRomFs{std::make_shared<skyline::vfs::RomFileSystem>(nca.romFs)};
+
+            for (auto fileEntry = controlRomFs->fileMap.begin(); fileEntry != controlRomFs->fileMap.end(); fileEntry++) {
+                auto fileName{fileEntry->first};
+                if (!fileName.ends_with(".szs"))
+                    continue;
+
+                auto compressedYac0File{controlRomFs->OpenFile(fileName)};
+                //auto decompressedData{decompressYaz0(compressedYac0File)};
+
+                //if (decompressedData.empty())
+                //    continue;
+
+                if (avatarFileSystem->FileExists(fileName))
+                    avatarFileSystem->DeleteFile(fileName);
+
+                //avatarFileSystem->CreateFile(fileName, decompressedData.size());
+                //std::shared_ptr<skyline::vfs::Backing> decompressedAvatarFile{avatarFileSystem->OpenFile(fileName, {true, true, false})};
+                //decompressedAvatarFile->Write(decompressedData);
+                avatarFileSystem->CreateFile(fileName, compressedYac0File->size);
+                std::shared_ptr<skyline::vfs::Backing> compressedAvatarFile{avatarFileSystem->OpenFile(fileName, {true, true, false})};
+
+                std::vector<skyline::u8> compressedData(compressedYac0File->size);
+                compressedYac0File->Read(compressedData);
+                compressedAvatarFile->Write(compressedData);
             }
         }
     }
