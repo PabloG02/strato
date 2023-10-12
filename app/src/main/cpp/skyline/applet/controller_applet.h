@@ -15,6 +15,7 @@ namespace skyline::applet {
       private:
         /**
          * @brief The version of the controller applet interface that an application supports
+         * @url https://switchbrew.org/wiki/Controller_Applet#Library_Applet_Versions
          */
         enum class ControllerAppletVersion : u32 {
             Version3 = 0x3, // 1.0.0 - 2.3.0
@@ -27,26 +28,29 @@ namespace skyline::applet {
 
         /**
          * @brief The requested mode of the controller applet, determines the specific UI that should be shown to the user
+         * @url https://switchbrew.org/wiki/Controller_Applet#ControllerSupportMode
          */
         enum class ControllerSupportMode : u8 {
             ShowControllerSupport = 0,
             ShowControllerStrapGuide = 1,
             ShowControllerFirmwareUpdate = 2,
-            ShowControllerKeyRemappingForSystem = 3,
+            ShowControllerKeyRemappingForSystem = 4,
 
             MaxControllerSupportMode
         };
 
         /**
          * @brief The caller that is requesting the controller applet
+         * @url https://switchbrew.org/wiki/Controller_Applet#ControllerSupportCaller
          */
         enum class ControllerSupportCaller : u8 {
-            Application = 1,
-            System = 2
+            Application = 0,
+            System = 1
         };
 
         /**
          * @brief Common set of arguments supplied for all controller applet invocations
+         * @url https://switchbrew.org/wiki/Controller_Applet#ControllerSupportArgPrivate
          */
         struct ControllerSupportArgPrivate {
             u32 argPrivateSize;
@@ -90,6 +94,7 @@ namespace skyline::applet {
 
         /**
          * @brief The result type of the controller applet controller support mode
+         * @url https://switchbrew.org/wiki/Controller_Applet#ControllerSupportResultInfo
          */
         struct ControllerSupportResultInfo {
             i8 playerCount;
