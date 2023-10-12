@@ -64,6 +64,8 @@ namespace skyline::input {
             bool nes : 1; //!< NES controller
             bool nesHandheld : 1; //!< NES controller in handheld mode
             bool snes : 1; //!< SNES controller
+            bool n64 : 1; //!< N64 controller
+            bool segaGenesis : 1; //!< Sega Genesis controller
         };
     };
     static_assert(sizeof(NpadStyleSet) == 0x4);
