@@ -779,6 +779,26 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     }
 
     @Suppress("unused")
+    fun showControllerApplet(playerCountMin: Byte, playerCountMax: Byte, supportedStyles: Int) {
+        val npadStyleTags = arrayOf("Pro Controller", "Joy-Con controller in handheld mode", "Joy-Con controller in dual mode",
+            "Joy-Con left controller in single mode", "Joy-Con right controller in single mode", "GameCube controller", "Poké Ball Plus controller",
+            "NES/Famicom controller", "NES/Famicom controller in handheld mode", "SNES controller", "N64 controller", "Sega Genesis controller")
+        val supportedNpadStyleTags = mutableListOf<String>()
+        repeat(npadStyleTags.size) { i ->
+            if (supportedStyles ushr i and 0x1 == 1)
+                supportedNpadStyleTags.add(npadStyleTags[i])
+        }
+        val numPlayers = "Number of players: $playerCountMin" + if (playerCountMin != playerCountMax) " - $playerCountMax" else ""
+        val supportedControllerStyles = "Supported controllers: ${supportedNpadStyleTags.joinToString(", ")}"
+        runOnUiThread {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Controller Applet")
+                .setMessage("$numPlayers\n$supportedControllerStyles")
+                .show()
+        }
+    }
+
+    @Suppress("unused")
     fun reportCrash() {
         if (BuildConfig.BUILD_TYPE != "release")
             return

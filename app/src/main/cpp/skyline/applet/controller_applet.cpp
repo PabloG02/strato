@@ -4,6 +4,7 @@
 
 #include <input.h>
 #include <input/npad.h>
+#include <jvm.h>
 #include <services/applet/common_arguments.h>
 #include <services/am/storage/ObjIStorage.h>
 #include "controller_applet.h"
@@ -29,6 +30,7 @@ namespace skyline::applet {
                                  controllerSupportModeArg.enableIdentificationColor, controllerSupportModeArg.enableExplainText);
 
             // Here is where we would trigger the applet UI
+            state.jvm->showControllerApplet(controllerSupportModeArg.playerCountMin, controllerSupportModeArg.playerCountMax, styleSet.raw);
 
             auto &npad{state.input->npad};
             std::scoped_lock lock{npad.mutex};

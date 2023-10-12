@@ -187,6 +187,11 @@ namespace skyline {
         /**
          * @brief A call to EmulationActivity.reportCrash in Kotlin
          */
+        void showControllerApplet(i8 playerCountMin, i8 playerCountMax, u32 supportedStyles);
+
+        /**
+         * @brief A call to EmulationActivity.reportCrash in Kotlin
+         */
         void reportCrash();
 
         /**
@@ -225,6 +230,8 @@ namespace skyline {
         jmethodID closeKeyboardId;
         jmethodID showValidationResultId;
         jmethodID getIntegerValueId;
+
+        jmethodID showControllerAppletId;
         jmethodID reportCrashId;
 
         jmethodID showPipelineLoadingScreenId;

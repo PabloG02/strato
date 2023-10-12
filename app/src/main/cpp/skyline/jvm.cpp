@@ -64,6 +64,7 @@ namespace skyline {
           closeKeyboardId{environ->GetMethodID(instanceClass, "closeKeyboard", "(Lemu/skyline/applet/swkbd/SoftwareKeyboardDialog;)V")},
           showValidationResultId{environ->GetMethodID(instanceClass, "showValidationResult", "(Lemu/skyline/applet/swkbd/SoftwareKeyboardDialog;ILjava/lang/String;)I")},
           getIntegerValueId{environ->GetMethodID(environ->FindClass("java/lang/Integer"), "intValue", "()I")},
+          showControllerAppletId{environ->GetMethodID(instanceClass, "showControllerApplet", "(BBI)V")},
           reportCrashId{environ->GetMethodID(instanceClass, "reportCrash", "()V")},
           showPipelineLoadingScreenId{environ->GetMethodID(instanceClass, "showPipelineLoadingScreen", "(I)V")},
           updatePipelineLoadingProgressId{environ->GetMethodID(instanceClass, "updatePipelineLoadingProgress", "(I)V")},
@@ -164,6 +165,10 @@ namespace skyline {
         auto result{static_cast<KeyboardCloseResult>(env->CallIntMethod(instance, showValidationResultId, dialog, checkResult, str))};
         env->DeleteLocalRef(str);
         return result;
+    }
+
+    void JvmManager::showControllerApplet(i8 playerCountMin, i8 playerCountMax, u32 supportedStyles) {
+        env->CallVoidMethod(instance, showControllerAppletId, static_cast<jbyte>(playerCountMin), static_cast<jbyte>(playerCountMax), static_cast<jint>(supportedStyles));
     }
 
     void JvmManager::reportCrash() {
